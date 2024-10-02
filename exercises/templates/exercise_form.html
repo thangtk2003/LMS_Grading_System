@@ -1,12 +1,17 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
-<h2>{{ exercise.title }}</h2>
-<p>{{ exercise.description }}</p>
-
-<form method="POST" action="{% url 'submit_code' exercise.id %}">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Submit Code</button>
-</form>
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h2>{{ exercise.title }}</h2>
+        <p>{{ exercise.description }}</p>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{% url 'submit_code' exercise.id %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Submit Code</button>
+        </form>
+    </div>
+</div>        
 {% endblock %}

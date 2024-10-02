@@ -5,6 +5,9 @@ class SubmissionForm(forms.ModelForm):
     class Meta:
         model = Submission
         fields = ['code']
+        widgets = {
+            'code': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+        }
 
 
 class ExerciseForm(forms.ModelForm):
