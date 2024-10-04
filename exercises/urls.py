@@ -8,4 +8,5 @@ urlpatterns = [
     path('exercise/<int:exercise_id>/submit/', views.submit_code, name='submit_code'),
     path('result/<int:submission_id>/', views.result_detail, name='result_detail'),
     path('results/', views.result_list, name='result_list'),
+    path('run_code/', views.run_code, name='run_code'),
 ]

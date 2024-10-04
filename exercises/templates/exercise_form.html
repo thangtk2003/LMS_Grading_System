@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
 <!-- CodeMirror Language Modes -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script> <!-- Dùng cho C và Java -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
 
 <div class="card shadow">
     <div class="card-header bg-info text-white">
@@ -19,16 +19,23 @@
     <div class="card-body">
         <form method="POST" action="{% url 'submit_code' exercise.id %}">
             {% csrf_token %}
-            {% comment %} <label for="language-select">Select Language:</label>
-            <select id="language-select">
-                <option value="python">Python</option>
-                <option value="text/x-c">C</option>
-                <option value="text/x-java">Java</option>
-            </select> {% endcomment %}
+            <label for="language-select">Language:</label>
+            <select id="language-select" disabled>
+                {% if exercise.language == "python"%}
+                    <option value="python">Python</option>
+                {% elif exercise.language == "c" %}
+                    <option value="text/x-c">C</option>
+                {% elif exercise.language == "java" %}
+                    <option value="text/x-java">Java</option>
+                {% endif %}
+            </select>
             {{ form.code.label }}
             <textarea id="code-editor" name="code" class="form-control" rows="5">{{ form.code.value|default_if_none:"" }}</textarea>
+            <button type="button" id="run-button" class="btn btn-success mt-3">Run</button>
+            <button type="button" class="btn btn-warning mt-3">Re-check</button>
             <button type="submit" class="btn btn-primary mt-3">Submit Code</button>
         </form>
+        <div id="output" class="mt-3"></div> <!-- Phần hiển thị kết quả -->
     </div>
 </div>        
 
@@ -49,9 +56,32 @@
         editor.setOption("mode", selectedLanguage);
     });
 
-    // Đảm bảo rằng textarea sẽ nhận giá trị từ CodeMirror khi submit form
+    // Đảm bảo textarea sẽ nhận giá trị từ CodeMirror khi submit form
     document.querySelector('form').addEventListener('submit', function() {
         editor.save();
+    });
+
+    // Xử lý sự kiện nhấn nút Run
+    document.getElementById('run-button').addEventListener('click', function() {
+        const code = editor.getValue(); // Lấy mã từ CodeMirror
+        const language = document.getElementById('language-select').value; // Lấy ngôn ngữ đã chọn
+
+        fetch("{% url 'run_code' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ code: code, language: language })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('output').innerHTML = '<pre>' + data.output + '</pre>';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('output').innerHTML = '<pre>Error: ' + error.message + '</pre>';
+        });
     });
 </script>
 {% endblock %}
