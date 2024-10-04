@@ -1,6 +1,16 @@
 {% extends "base_generic.html" %}
 
 {% block content %}
+<!-- CodeMirror CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<!-- CodeMirror Theme (Monokai) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/monokai.min.css">
+<!-- CodeMirror Language Modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script> <!-- Dùng cho C và Java -->
+
 <div class="card shadow">
     <div class="card-header bg-info text-white">
         <h2>{{ exercise.title }}</h2>
@@ -9,9 +19,39 @@
     <div class="card-body">
         <form method="POST" action="{% url 'submit_code' exercise.id %}">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Submit Code</button>
+            {% comment %} <label for="language-select">Select Language:</label>
+            <select id="language-select">
+                <option value="python">Python</option>
+                <option value="text/x-c">C</option>
+                <option value="text/x-java">Java</option>
+            </select> {% endcomment %}
+            {{ form.code.label }}
+            <textarea id="code-editor" name="code" class="form-control" rows="5">{{ form.code.value|default_if_none:"" }}</textarea>
+            <button type="submit" class="btn btn-primary mt-3">Submit Code</button>
         </form>
     </div>
 </div>        
+
+<!-- Initialize CodeMirror -->
+<script>
+    var editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+        mode: 'python',  // Mặc định là Python
+        lineNumbers: true,
+        theme: 'default',
+        tabSize: 4,
+        indentUnit: 4,
+        matchBrackets: true,
+        autoCloseBrackets: true
+    });
+
+    document.getElementById('language-select').addEventListener('change', function() {
+        var selectedLanguage = this.value;
+        editor.setOption("mode", selectedLanguage);
+    });
+
+    // Đảm bảo rằng textarea sẽ nhận giá trị từ CodeMirror khi submit form
+    document.querySelector('form').addEventListener('submit', function() {
+        editor.save();
+    });
+</script>
 {% endblock %}

@@ -3,9 +3,18 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class Exercise(models.Model):
+    LANGUAGE_CHOICES = [
+        ('python', 'Python'),
+        ('java', 'Java'),
+        ('c', 'C'),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
-    test_cases = models.TextField(help_text="Define test cases as Python code")
+    language = models.CharField(max_length=10,
+                                choices=LANGUAGE_CHOICES,
+                                default='python')
+    test_cases = models.TextField(help_text="Define test cases as Python/Java/C code")
 
     def __str__(self):
         return self.title

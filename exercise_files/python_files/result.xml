@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="5" time="0.073" timestamp="2024-10-02T15:04:44.684454+07:00" hostname="BinhNguyen"><testcase classname="exercise_files.test_student_code" name="test_is_prime_2" time="0.001"><failure message="assert False == True&#10; +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(2)">exercise_files\test_student_code.py:7: in test_is_prime_2
+    assert is_prime(2) == True  # 2 is prime
+E   assert False == True
+E    +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(2)</failure></testcase><testcase classname="exercise_files.test_student_code" name="test_is_prime_3" time="0.001"><failure message="assert False == True&#10; +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(3)">exercise_files\test_student_code.py:15: in test_is_prime_3
+    assert is_prime(3) == True  # 3 is prime
+E   assert False == True
+E    +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(3)</failure></testcase><testcase classname="exercise_files.test_student_code" name="test_is_prime_4" time="0.001"><failure message="assert False == True&#10; +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(4)">exercise_files\test_student_code.py:23: in test_is_prime_4
+    assert is_prime(4) == True  # 4 is not prime
+E   assert False == True
+E    +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(4)</failure></testcase><testcase classname="exercise_files.test_student_code" name="test_is_prime_17" time="0.000"><failure message="assert False == True&#10; +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(17)">exercise_files\test_student_code.py:31: in test_is_prime_17
+    assert is_prime(17) == True  # 17 is prime
+E   assert False == True
+E    +  where False = &lt;function is_prime at 0x000002216297EAC0&gt;(17)</failure></testcase><testcase classname="exercise_files.test_student_code" name="test_is_prime_20" time="0.000" /></testsuite></testsuites>

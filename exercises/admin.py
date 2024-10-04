@@ -4,7 +4,7 @@ from .models import Exercise, Submission
 # Register your models here.
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ('title',)
+    list_display = ('title', 'description', 'language')
     search_fields = ('title',)
 
 @admin.register(Submission)
