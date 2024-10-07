@@ -32,7 +32,7 @@
             {{ form.code.label }}
             <textarea id="code-editor" name="code" class="form-control" rows="5">{{ form.code.value|default_if_none:"" }}</textarea>
             <button type="button" id="run-button" class="btn btn-success mt-3">Run</button>
-            <button type="button" class="btn btn-warning mt-3">Re-check</button>
+            <button type="button" id="pre-check" class="btn btn-warning mt-3">Pre-check</button>
             <button type="submit" class="btn btn-primary mt-3">Submit Code</button>
         </form>
         <div id="output" class="mt-3"></div> <!-- Phần hiển thị kết quả -->

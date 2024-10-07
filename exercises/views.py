@@ -1,16 +1,20 @@
-from django.shortcuts import render, redirect,  get_object_or_404
-from .models import Exercise, Submission
-from .forms import SubmissionForm, ExerciseForm
-from django.contrib import messages
-from django.conf import settings
+import json  # To parse test cases
+import math
 import os  # To create temporary directories
 import re
-import pytest  # To run test cases
-import tempfile  # To create temporary files
-import json  # To parse test cases
 import subprocess  # To run student code
+import tempfile  # To create temporary files
 import xml.etree.ElementTree as ET
-from django.http import JsonResponse
+
+import pytest  # To run test cases
+from django.conf import settings
+from django.contrib import messages
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
+from .forms import ExerciseForm, SubmissionForm
+from .models import Exercise, Submission
+
 # Create your views here.
 
 def exercise_list(request):
@@ -380,3 +384,135 @@ def run_code(request):
 
     return JsonResponse({'output': 'Invalid request'}, status=400)
 
+def precheck_code(request, exercise_id):
+    exercise = get_object_or_404(Exercise, id=exercise_id)
+    if request.method == "POST":
+        code = request.POST.get('code')
+        language = exercise.language
+        if language == 'python':
+            test_cases = exercise.test_cases
+        else:
+            test_cases = json.loads(exercise.test_cases)        # Assuming test_cases are stored in JSON format  
+        result = precheck(code, language, test_cases)
+        return JsonResponse({'score': result['score']})
+    return HttpResponseBadRequest("Invalid request")
+
+def precheck(code, language, test_cases):
+    # Initialize passed test count
+    total_tests = len(test_cases)
+    two_third_tests = math.ceil(total_tests * 2 / 3)
+    precheck_test_cases = test_cases[:two_third_tests]
+    hide_test_cases = test_cases[two_third_tests:]
+    passed_tests = 0
+    
+    
+    # Prepare file paths for student code
+    if language == 'java':
+        student_code_file = os.path.join(JAVA_DIR, 'StudentCode.java')
+    # Define a match-case statement to handle different languages
+    match language:
+        case 'python':       
+            try:
+                # Save Python code to a temporary file
+                student_code_file = os.path.join(PYTHON_DIR, 'student_code.py')
+                with open(student_code_file, 'w', encoding='utf-8') as f:
+                    f.write(code)
+                                    
+                test_file = os.path.join(PYTHON_DIR, 'test_student_code.py')
+                test_code = f"""
+            import student_code
+            {precheck_test_cases}
+            """
+                with open(test_file, 'w') as t:
+                    t.write(test_code)                 
+
+                # Run the Python code and capture the output
+                result = subprocess.run(['pytest', test_file, '--tb=short', '--disable-warnings'],
+                                        capture_output=True,
+                                        text=True)
+                output = result.stdout if result.returncode == 0 else result.stderr
+                passed_tests = output.count('PASSED')
+            except Exception as e:
+                output = str(e)
+        case 'c':
+            try:
+                # Save C code to a temporary file
+                with open('temp_script.c', 'w', encoding='utf-8') as f:
+                    f.write(code)
+
+                # Compile C code to an executable file
+                compile_result = subprocess.run(['gcc', 'temp_script.c', '-o', 'temp_script.exe'],
+                                                capture_output=True,
+                                                text=True)
+
+                if compile_result.returncode != 0:
+                    output = compile_result.stderr  # If there is a compilation error
+                    return {'error': output, 'passed_tests': 0}
+                else:
+                    # Run the executable file and capture the output
+                    result = subprocess.run(['temp_script.exe'], capture_output=True, text=True)
+                    output = result.stdout if result.returncode == 0 else result.stderr
+
+                # Delete the executable file after use
+                os.remove('temp_script.exe')
+            except Exception as e:
+                output = str(e)
+            
+            # Now run the compiled program with the test cases
+            for test in test_cases:
+                try:
+                    run_process = subprocess.run(['temp_script.exe'], 
+                                                input=test['input'], 
+                                                text=True, 
+                                                capture_output=True, 
+                                                timeout=2
+                                                )
+                    output = run_process.stdout.strip()
+
+                    # Compare output with expected output
+                    if output == test['expected_output'].strip():
+                        passed_tests += 1
+
+                except subprocess.TimeoutExpired:
+                    # If the program takes too long, consider the test as failed
+                    continue
+        case 'java':
+            try:
+                # Find the public class name in the Java code
+                match = re.search(r'public\s+class\s+(\w+)', code)
+                if match:
+                    class_name = match.group(1)
+                    java_filename = f"{class_name}.java"
+                else:
+                    output = "No public class found in the Java code."
+                    return JsonResponse({'output': output})
+
+                # Save Java code to a file with the same name as the public class
+                with open(java_filename, 'w', encoding='utf-8') as f:
+                    f.write(code)
+
+                # Compile the Java code
+                compile_result = subprocess.run(['javac', java_filename], capture_output=True, text=True)
+
+                if compile_result.returncode != 0:
+                    output = compile_result.stderr  # If there is a compilation error
+                else:
+                    # Run the executable file and capture the output
+                    result = subprocess.run(['java', class_name], capture_output=True, text=True)
+                    output = result.stdout if result.returncode == 0 else result.stderr
+
+                    # Delete the .class file after use if it exists
+                    class_file = f"{class_name}.class"
+                    if os.path.exists(class_file):
+                        os.remove(class_file)
+                    else:
+                        print(f"File {class_file} does not exist, cannot delete.")
+
+                # Delete the Java source code file if it exists
+                if os.path.exists(java_filename):
+                    os.remove(java_filename)
+
+            except Exception as e:
+                output = str(e)
+
+    return {'passed_tests': passed_tests}
