@@ -61,10 +61,7 @@ def precheck_code(request, exercise_id):
         data = json.loads(request.body)
         code = data.get('code')
         language = data.get('language')
-        if language == 'python':
-            test_cases = exercise.test_cases
-        else:
-            test_cases = json.loads(exercise.test_cases)        # Assuming test_cases are stored in JSON format  
+        test_cases = json.loads(exercise.test_cases)        # Assuming test_cases are stored in JSON format  
         result = precheck(code, language, test_cases)
         return JsonResponse({'passed_tests': result['passed_tests'],
                             'hide_test_cases': result['hide_test_cases'],

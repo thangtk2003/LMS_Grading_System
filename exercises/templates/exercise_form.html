@@ -21,13 +21,7 @@
             {% csrf_token %}
             <label for="language-select">Language:</label>
             <select id="language-select" disabled>
-                {% if exercise.language == "python"%}
-                <option value="python">Python</option>
-                {% elif exercise.language == "c" %}
-                <option value="c">C</option>
-                {% elif exercise.language == "java" %}
-                <option value="java">Java</option>
-                {% endif %}
+                <option value="{{ exercise.language }}">{{ exercise.language|capfirst }}</option>
             </select>
             {{ form.code.label }}
             <textarea id="code-editor" name="code" class="form-control"

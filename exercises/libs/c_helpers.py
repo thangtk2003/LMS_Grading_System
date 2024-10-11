@@ -5,9 +5,8 @@ from .helpers import save_xml_result, run_test_case, calculate_score, cleanup_fi
 
 
 def handle_c(submission, student_code_file, compiled_executable, test_cases, total_tests, passed_tests):
-    
     root = ET.Element("grading_result")
-    
+
     # Compile C code and check for errors
     if compile_c_code(student_code_file, compiled_executable, root) != 0:
         return save_xml_result(root, get_dir('c'), "result.xml", score=0)

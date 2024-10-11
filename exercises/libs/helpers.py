@@ -1,12 +1,9 @@
 import os
-import json
 import subprocess
 import xml.etree.ElementTree as ET
 import re
-import math
 
 from django.conf import settings
-from django.http import JsonResponse
 
 
 # Directory where the code and test files will be saved
@@ -76,14 +73,42 @@ def run_test_case(executable, test, test_index, root):
 
     return 0
 
-def parse_test_results(result_xml):
-    tree = ET.parse(result_xml)
-    root = tree.getroot()
+def parse_test_results(output, test_cases):
+    passed_tests = output.lower().count('passed')
+    total_tests = len(test_cases)
+    
+    # Split the output into lines
+    output_lines = output.splitlines()
+    
+    test_results = []
+    for i, test_case in enumerate(test_cases):
+        # Ensure we don't go out of bounds
+        if i < len(output_lines):
+            test_result = output_lines[i]  # Get the i-th test result line
+        else:
+            # If there are not enough lines, append an error or a default
+            test_result = "failed: No result available for this test case"
+        
+        # Default result is 'passed'
+        result = {'test_name': f"test_{i+1}", 'result': 'passed'}
+        
+        # Update result based on the test output
+        if 'failed' in test_result.lower():
+            result['result'] = 'failed'
+            if 'failed:' in test_result:
+                result['details'] = test_result.split("failed:")[1].strip()
+            else:
+                result['details'] = "Unknown failure."
+        elif 'exception' in test_result.lower():
+            result['result'] = 'failed'
+            if 'raised an exception:' in test_result:
+                result['details'] = test_result.split("raised an exception:")[1].strip()
+            else:
+                result['details'] = "Exception occurred but no details provided."
+        
+        test_results.append(result)
 
-    total_tests = sum(int(testsuite.get('tests', 0)) for testsuite in root.findall('testsuite'))
-    total_failures = sum(int(testsuite.get('failures', 0)) for testsuite in root.findall('testsuite'))
-
-    return calculate_score(total_tests - total_failures, total_tests)
+    return test_results, passed_tests, total_tests
 
 def calculate_score(passed_tests, total_tests):
     return (passed_tests / total_tests) * 100 if total_tests > 0 else 100
