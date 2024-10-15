@@ -3,13 +3,15 @@ import json
 import subprocess
 import re
 import math
-
+import mysql.connector
 from django.http import JsonResponse
 
 from .helpers import get_dir, prepare_file_paths, write_to_file, cleanup_files
 from .c_helpers import handle_c, run_c_tests
 from .java_helpers import handle_java, run_java_tests
 from .python_helpers import handle_python, run_python_tests
+from .sql_helpers import handle_sql, get_mysql_connection , run_sql_test
+
 
 def grade_submission(submission):
     # Get student's code and language
@@ -37,6 +39,7 @@ def grade_submission(submission):
             return handle_c(submission, student_code_file, compiled_executable, test_cases, total_tests, passed_tests)
         case 'java':
             return handle_java(submission, student_code_file, class_name, test_cases, total_tests, passed_tests)
+        
 
     return {'score': 0}
 
@@ -54,6 +57,8 @@ def precheck(code, language, test_cases):
             passed_tests = precheck_c(language, code, precheck_test_cases, passed_tests, hide_test_cases)
         case 'java':
             passed_tests = precheck_java(language, code, precheck_test_cases, passed_tests, hide_test_cases)
+        case 'mysql':
+            passed_tests = precheck_sql(language, code, test_cases)
 
     return {'passed_tests': passed_tests, 'hide_test_cases': hide_test_cases}
 
@@ -119,3 +124,45 @@ def precheck_java(language, code, precheck_test_cases, passed_tests, hide_test_c
         return {'error': str(e), 'passed_tests': passed_tests, 'hide_test_cases': hide_test_cases}
     
     return passed_tests
+
+
+def precheck_sql(language, code, test_cases):
+    lines = code.splitlines()
+    print(lines)
+    try:
+        # Connect to the MySQL database
+        conn = get_mysql_connection()
+        cursor = conn.cursor()
+
+        # Set a query timeout (in milliseconds)
+        timeout = 3000  # 3000 ms = 3 seconds
+        cursor.execute(f"SET SESSION MAX_EXECUTION_TIME = {timeout};")
+
+        # Execute the student's code
+        try:
+            cursor.execute(lines[0])
+            student_result = cursor.fetchall()  # Get the result from the student's query
+            print("Student's Result:", student_result)
+        except mysql.connector.Error as e:
+            return {'error': f"Error executing student's query: {e}"}
+
+        # Execute the expected query
+        expected_query = test_cases[0]['query']
+        cursor.execute(expected_query)
+        expected_result = cursor.fetchall()
+        print("Expected Result:", expected_result)
+
+        # Compare student's result with expected result
+        if student_result == expected_result:
+            print('Pass')
+            return {'passed_tests': 1}  # Increment passed tests if the output matches
+        else:
+            print('Fail')
+            return {'passed_tests': 0}  # Return failed test case
+
+    except mysql.connector.Error as e:
+        return {'error': f"SQL Error: {e}"}
+    
+    finally:
+        cursor.close()  # Ensure cursor is closed after execution
+        conn.close()    # Ensure connection is closed

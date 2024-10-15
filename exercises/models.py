@@ -7,6 +7,7 @@ class Exercise(models.Model):
         ('python', 'Python'),
         ('java', 'Java'),
         ('c', 'C'),
+        ('mysql', 'MySql'),
     ]
 
     title = models.CharField(max_length=200)

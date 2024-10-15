@@ -6,19 +6,6 @@ import re
 from django.conf import settings
 
 
-# Directory where the code and test files will be saved
-# EXERCISE_DIR = os.path.normpath(os.path.join(settings.BASE_DIR, 'exercise_files'))
-# os.makedirs(EXERCISE_DIR, exist_ok=True)
-
-# PYTHON_DIR = os.path.normpath(os.path.join(EXERCISE_DIR, 'python_files'))
-# os.makedirs(PYTHON_DIR, exist_ok=True)
-
-# C_DIR = os.path.normpath(os.path.join(EXERCISE_DIR, 'c_files'))
-# os.makedirs(C_DIR, exist_ok=True)
-
-# JAVA_DIR = os.path.normpath(os.path.join(EXERCISE_DIR, 'java_files'))
-# os.makedirs(JAVA_DIR, exist_ok=True)
-
 def get_dir(language):
     EXERCISE_DIR = os.path.normpath(os.path.join(settings.BASE_DIR, 'exercise_files'))
     os.makedirs(EXERCISE_DIR, exist_ok=True)
