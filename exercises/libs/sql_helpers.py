@@ -34,6 +34,8 @@ def get_mysql_connection():
 
 def execute_sql(language, code, test_cases):
     dict_query_student = split_queries(code)
+    if isinstance( dict_query_student,str):
+        return dict_query_student
     test_cases = convert_list_to_dict(test_cases)
     print(dict_query_student)
     print(test_cases)
@@ -48,37 +50,52 @@ def execute_sql(language, code, test_cases):
             # Execute the student's code
             message_temp = ""
             student_result = execute_student_query(cursor, dict_query_student.get(query_key))  # Get the result from the student's query
-            message_temp += f"Student's Result for {query_key}:" + str(student_result) + "<br>"
+            message_temp += f"<strong>Your Result:</strong>" + str(student_result.get('result')) + "<br>"
             
 
             # Execute the expected query
             expected_query = test_cases.get(query_key)
             cursor.execute(expected_query)
             expected_result = cursor.fetchall()
-            message_temp += f"Expected Result for {query_key}:" + str(expected_result) + "<br>"
+            message_temp += f"<strong>Expected Result:</strong>" + str(expected_result) + "<br>"
 
-            # Compare student's result with expected result
             if student_result.get('result', []) == expected_result:
                 passed_tests += 1
                 print(f'{query_key}: Pass')
-                message.append(message_temp + f'{query_key}: Pass' + "<br>") 
+                # Thêm nội dung vào thẻ alert success khi pass
+                message.append(
+                    f'<div class="alert alert-success" role="alert">'
+                    f'{message_temp}<div style="text-align: center;"><strong>&lt;&lt;&lt;&lt;&lt;&lt; Pass &gt;&gt;&gt;&gt;&gt;&gt;</strong></div>'
+                    f'</div>'
+                )
             else:
-                error_msg = student_result.get('error', [])
+                error_msg = student_result.get('error',"Please check the expected Result !!!")
                 print(f'{query_key}: Fail - Error: {error_msg}')
-                message.append(message_temp + f'{query_key}: Fail - Error: {error_msg}' + "<br>")
+                # Thêm nội dung vào thẻ alert danger khi fail
+                message.append(
+                    f'<div class="alert alert-danger" role="alert">'
+                    f'{message_temp} <div style="text-align: center;"><strong>{error_msg}</strong><br><strong>&lt;&lt;&lt;&lt;&lt;&lt; Fail &gt;&gt;&gt;&gt;&gt;&gt;</strong></div>'
+                    f'</div>'
+                )
         header_msg = f"""
-        RUNNING TEST CASES: <br>
-        {passed_tests} TEST CASES PASSED ON {len(test_cases)} TOTAL TEST CASES <br>
+       <div style="text-align: center;">
+       <h5> <span style="color: black;"> &lt;&lt;&lt;&lt;&lt;&lt;RUNNING TEST CASES&gt;&gt;&gt;&gt;&gt;&gt;</span></h5>
+       <h6> <span style="color: red;">You have passed {passed_tests} out of 
+       {len(test_cases)} total test cases. </span></h6></div><br>
+        
         """
         message.insert(0, header_msg)
     except mysql.connector.Error as e:
         return {'error': f"SQL Error: {e}"}
     
     finally:
-        cursor.close()  # Ensure cursor is closed after execution
-        conn.close()    # Ensure connection is closed
-    
-    return message
+        if cursor is not None:  # Check if cursor was created
+            cursor.close()  # Ensure cursor is closed after execution
+        if conn is not None:  # Check if connection was created
+            conn.close() 
+    combined_message = ''.join(message)
+    print(combined_message)
+    return combined_message
 
 def split_queries(queries: str) -> dict:
     # Regular expression to match 'query_' followed by the number and capture the query
@@ -86,7 +103,11 @@ def split_queries(queries: str) -> dict:
     
     # Find all matches using the regular expression
     matches = re.findall(pattern, queries, re.DOTALL)
-    
+    if not matches:
+        return """<div class="alert alert-warning" role="alert">
+    No queries found in the input string. <br> 
+    Queries should start with <strong>query_1</strong>, <strong>query_2</strong>, etc.
+</div>"""
     # Create a dictionary from the matches, replacing newlines with spaces
     query_dict = {match[0]: match[1].replace('\n', '').strip() for match in matches}
     
