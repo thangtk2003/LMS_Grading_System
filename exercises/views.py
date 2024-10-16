@@ -18,7 +18,7 @@ def exercise_add(request):
         form = ExerciseForm(request.POST)
         if form.is_valid():
             form.save()  # Save the exercise to the database
-            return redirect('exercise_list')  # Redirect to a page that shows all exercises
+            return redirect('exercises:exercise_list')  # Redirect to a page that shows all exercises
     else:
         form = ExerciseForm()
 
@@ -41,11 +41,11 @@ def submit_code(request, exercise_id):
             result = grade_submission(submission)
             submission.score = result['score']
             submission.save()
-            return redirect('result_detail', submission_id=submission.id)
+            return redirect('exercises:result_detail', submission_id=submission.id)
         else:
             print(form.errors)  # Print form errors to debug
             print(request.POST)  # Print form data for debugging
-    return redirect('exercise_list')
+    return redirect('exercises:exercise_list')
 
 def result_detail(request, submission_id):
     submission = Submission.objects.get(id=submission_id)
@@ -64,6 +64,6 @@ def precheck_code(request, exercise_id):
         test_cases = json.loads(exercise.test_cases)        # Assuming test_cases are stored in JSON format  
         result = precheck(code, language, test_cases)
         return JsonResponse({'passed_tests': result['passed_tests'],
-                            'hide_test_cases': result['hide_test_cases'],
+                            'hide_test_cases': result['hide_test_cases']
                             })
     return HttpResponseBadRequest("Invalid request")

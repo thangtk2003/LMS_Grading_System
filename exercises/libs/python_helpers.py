@@ -103,7 +103,7 @@ def count_passed_tests(output):
 def run_python_tests(test_file, precheck_test_cases, passed_tests):
     test_file = generate_test_script(test_file, precheck_test_cases)
     # Run the student_code.py script via subprocess
-    result = run_test_script(test_file)
-    passed_tests = count_passed_tests(result)
+    output = run_test_script(test_file)
+    passed_tests = count_passed_tests(output)
 
     return passed_tests

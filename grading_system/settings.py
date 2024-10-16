@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'exercises',
     'crispy_forms',
+    'import_export',
 ]
 
 MIDDLEWARE = [

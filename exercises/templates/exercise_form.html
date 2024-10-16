@@ -17,7 +17,7 @@
         <p>{{ exercise.description }}</p>
     </div>
     <div class="card-body">
-        <form id="code-form" method="POST" action="{% url 'submit_code' exercise.id %}">
+        <form id="code-form" method="POST" action="{% url 'exercises:submit_code' exercise.id %}">
             {% csrf_token %}
             <label for="language-select">Language:</label>
             <select id="language-select" disabled>
@@ -85,7 +85,7 @@
         const code = editor.getValue(); // Get the code from CodeMirror
         const language = document.getElementById('language-select').value; // Get the selected language
 
-        fetch("{% url 'precheck_code' exercise.id %}", {
+        fetch("{% url 'exercises:precheck_code' exercise.id %}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -97,8 +97,7 @@
             .then(data => {
                 // Update the result section with the passed test cases
                 document.getElementById('output').innerHTML =
-                    `>> ${data.passed_tests} TEST CASES PASSED << <br> <br>
-                == ${data.hide_test_cases} HIDDEN TEST CASES LEFT ==`;
+                    `${data.passed_tests}`;
             })
             .catch(error => {
                 console.error('Error:', error);
