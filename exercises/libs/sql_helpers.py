@@ -50,14 +50,14 @@ def execute_sql(language, code, test_cases):
             # Execute the student's code
             message_temp = ""
             student_result = execute_student_query(cursor, dict_query_student.get(query_key))  # Get the result from the student's query
-            message_temp += f"<strong>Your Result:</strong>" + str(student_result.get('result')) + "<br>"
+            message_temp += f"<strong>Your Result:</strong>" + "&nbsp;&nbsp;&nbsp;&nbsp;" +str(student_result.get('result')) + "<br>"
             
 
             # Execute the expected query
             expected_query = test_cases.get(query_key)
             cursor.execute(expected_query)
             expected_result = cursor.fetchall()
-            message_temp += f"<strong>Expected Result:</strong>" + str(expected_result) + "<br>"
+            message_temp += f"<strong>Expected Result:</strong>" + "&nbsp;&nbsp;&nbsp;&nbsp;" +str(expected_result) + "<br>"
 
             if student_result.get('result', []) == expected_result:
                 passed_tests += 1
