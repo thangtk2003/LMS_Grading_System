@@ -80,6 +80,7 @@
         editor.save();
     });
 
+    
     // Xử lý sự kiện nhấn nút Pre-check
     document.getElementById('precheck-button').addEventListener('click', function () {
         const code = editor.getValue(); // Get the code from CodeMirror
@@ -97,7 +98,9 @@
             .then(data => {
                 // Update the result section with the passed test cases
                 document.getElementById('output').innerHTML =
-                    `${data.passed_tests}`;
+                `<div class="alert alert-light" role="alert">
+                    ${data.passed_tests}
+                </div>`;
             })
             .catch(error => {
                 console.error('Error:', error);

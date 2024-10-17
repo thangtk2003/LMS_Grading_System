@@ -10,7 +10,7 @@ from .models import Exercise, Submission
 
 # Create your views here.
 def exercise_list(request):
-    exercises = Exercise.objects.all()
+    exercises = Exercise.objects.all().order_by('title')
     return render(request, 'exercise_list.html', {'exercises': exercises})
 
 def exercise_add(request):
