@@ -1,6 +1,5 @@
 import mysql.connector
-import xml.etree.ElementTree as ET
-from .helpers import save_xml_result, calculate_score, get_dir
+from .helpers import calculate_score
 import re
 from mysql.connector import Error, ProgrammingError, OperationalError, DataError, IntegrityError
 
@@ -32,7 +31,7 @@ def get_mysql_connection():
         #print(f"Error: {err}")
         raise
 
-def execute_sql(language, code, test_cases):
+def execute_sql(code, test_cases):
     dict_query_student = split_queries(code)
     if isinstance( dict_query_student,str):
         return dict_query_student
@@ -50,7 +49,6 @@ def execute_sql(language, code, test_cases):
             student_result = execute_student_query(cursor, dict_query_student.get(query_key))  # Get the result from the student's query
             message_temp += f"<strong>Your Result:</strong>" + "&nbsp;&nbsp;&nbsp;&nbsp;" +str(student_result.get('result')) + "<br>"
             
-
             # Execute the expected query
             expected_query = test_cases.get(query_key)
             if expected_query:
@@ -93,8 +91,7 @@ def execute_sql(language, code, test_cases):
         if conn is not None:  # Check if connection was created
             conn.close() 
     combined_message = ''.join(message)
-    #print(combined_message)
-    return combined_message
+    return combined_message, passed_tests
 
 def split_queries(queries: str) -> dict:
     # Regular expression to match 'query_' followed by the number and capture the query

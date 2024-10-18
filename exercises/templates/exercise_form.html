@@ -14,7 +14,7 @@
 <div class="card shadow">
     <div class="card-header bg-info text-white">
         <h2>{{ exercise.title }}</h2>
-        <p>{{ exercise.description }}</p>
+        {{ exercise.description | safe }}
     </div>
     <div class="card-body">
         <form id="code-form" method="POST" action="{% url 'exercises:submit_code' exercise.id %}">
@@ -26,9 +26,13 @@
             {{ form.code.label }}
             <textarea id="code-editor" name="code" class="form-control"
                 rows="5">{{ form.code.value|default_if_none:"" }}</textarea>
-            <button type="button" id="precheck-button" class="btn btn-warning mt-3">Pre-check</button>
-            <button type="button" id="clear-button" class="btn btn-danger mt-3">Clear</button>
-            <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#confirmModal">Submit Code</button>
+            <button type="button" id="precheck-button" class="btn btn-outline-warning mt-3">Pre-check</button>
+            <button type="button" id="clear-button" class="btn btn-outline-danger mt-3">Clear</button>
+            {% if submissed is False %}
+                <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#confirmModal">Submit Code</button>
+            {% else %}
+                <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#confirmModal" disabled>Disabled Submit Code</button>
+            {% endif %}
         </form>
         <div id="output" class="mt-3"></div> <!-- Phần hiển thị kết quả -->
     </div>
@@ -99,7 +103,7 @@
                 // Update the result section with the passed test cases
                 document.getElementById('output').innerHTML =
                 `<div class="alert alert-light" role="alert">
-                    ${data.passed_tests}
+                    ${data.combined_message}
                 </div>`;
             })
             .catch(error => {

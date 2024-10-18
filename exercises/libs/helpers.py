@@ -1,6 +1,5 @@
 import os
 import subprocess
-import xml.etree.ElementTree as ET
 import re
 
 from django.conf import settings
@@ -21,91 +20,26 @@ def get_dir(language):
 def prepare_file_paths(language, student_code):
     if language == 'python':
         student_code_file = os.path.join(get_dir(language), 'student_code.py')
-        test_file = os.path.join(get_dir(language), 'test_student_code.py')
-        return student_code_file, test_file, None, None
+        return student_code_file, None, None
     elif language == 'c':
         student_code_file = os.path.join(get_dir(language), 'student_code.c')
         compiled_executable = os.path.join(get_dir(language), 'student_program.exe')
-        return student_code_file, None, compiled_executable, None
+        return student_code_file, compiled_executable, None
     elif language == 'java':
         match = re.search(r'public\s+class\s+(\w+)', student_code)
         if match:
             class_name = match.group(1)
             student_code_file = os.path.join(get_dir(language), f"{class_name}.java")
-            return student_code_file, None, None, class_name
+            return student_code_file, None, class_name
         else:
-            return None, None, None, None
+            return None, None, None
 
 def write_to_file(file_path, content):
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding='utf-8') as f:
         f.write(content)
-
-def run_test_case(executable, test, test_index, root):
-    test_case_element = ET.SubElement(root, "test_case", id=str(test_index+1))
-    ET.SubElement(test_case_element, "input").text = test['input']
-    ET.SubElement(test_case_element, "expected_output").text = test['expected_output']
-
-    try:
-        run_process = subprocess.run(executable.split(), input=test['input'], text=True, capture_output=True, timeout=2)
-        output = run_process.stdout.strip()
-        ET.SubElement(test_case_element, "actual_output").text = output
-
-        if output == test['expected_output'].strip():
-            ET.SubElement(test_case_element, "result").text = "passed"
-            return 1
-        else:
-            ET.SubElement(test_case_element, "result").text = "failed"
-    except subprocess.TimeoutExpired:
-        ET.SubElement(test_case_element, "result").text = "timeout"
-
-    return 0
-
-def parse_test_results(output, test_cases):
-    passed_tests = output.lower().count('passed')
-    total_tests = len(test_cases)
-    
-    # Split the output into lines
-    output_lines = output.splitlines()
-    
-    test_results = []
-    for i, test_case in enumerate(test_cases):
-        # Ensure we don't go out of bounds
-        if i < len(output_lines):
-            test_result = output_lines[i]  # Get the i-th test result line
-        else:
-            # If there are not enough lines, append an error or a default
-            test_result = "failed: No result available for this test case"
-        
-        # Default result is 'passed'
-        result = {'test_name': f"test_{i+1}", 'result': 'passed'}
-        
-        # Update result based on the test output
-        if 'failed' in test_result.lower():
-            result['result'] = 'failed'
-            if 'failed:' in test_result:
-                result['details'] = test_result.split("failed:")[1].strip()
-            else:
-                result['details'] = "Unknown failure."
-        elif 'exception' in test_result.lower():
-            result['result'] = 'failed'
-            if 'raised an exception:' in test_result:
-                result['details'] = test_result.split("raised an exception:")[1].strip()
-            else:
-                result['details'] = "Exception occurred but no details provided."
-        
-        test_results.append(result)
-
-    return test_results, passed_tests, total_tests
 
 def calculate_score(passed_tests, total_tests):
     return (passed_tests / total_tests) * 100 if total_tests > 0 else 100
-
-def save_xml_result(root, dir_path, file_name, score):
-    ET.SubElement(root, "score").text = str(score)
-    tree = ET.ElementTree(root)
-    xml_file_path = os.path.join(dir_path, file_name)
-    tree.write(xml_file_path)
-    return {'score': score}
 
 def cleanup_files(file_paths):
     for file_path in file_paths:
@@ -113,3 +47,57 @@ def cleanup_files(file_paths):
             os.remove(file_path)
         else:
             print(f"File {file_path} does not exist, cannot delete.")
+
+def run_code(language, test_file, test, compiled_executable, class_name):
+    match language:
+        case 'python':
+            command = ['python', test_file]
+        case 'c':
+            command = compiled_executable
+        case 'java':
+            command = ['java', '-cp', get_dir('java'), class_name]
+    result = subprocess.run(
+        command,
+        input=test['input'],
+        capture_output=True,
+        text=True
+    )
+    return result
+
+def run_and_combine_messsages(language, test_file, compiled_executable, class_name, precheck_test_cases, numHiddenTestCases, passed_tests):
+    message = []
+    try:
+        for test in precheck_test_cases:
+            message_temp = ""
+            # Run the student_code.py script via subprocess
+            result = run_code(language, test_file, test, compiled_executable, class_name)
+            message_temp += f"<strong>Your Result:</strong>" + "&nbsp;&nbsp;&nbsp;&nbsp;" +str(result.stdout) + "<br>"
+            message_temp += f"<strong>Expected Result:</strong>" + "&nbsp;&nbsp;&nbsp;&nbsp;" +str(test['expected_output'].strip()) + "<br>"
+            if result.stdout.strip() == test['expected_output'].strip():
+                passed_tests += 1
+                # Thêm nội dung vào thẻ alert success khi pass
+                message.append(
+                    f'<div class="alert alert-success" role="alert">'
+                    f'{message_temp}<div style="text-align: center;"><strong>&lt;&lt;&lt;&lt;&lt;&lt; Pass &gt;&gt;&gt;&gt;&gt;&gt;</strong></div>'
+                    f'</div>'
+                )
+            else:
+                error_msg = "Please check the expected Result !!!"
+                # Thêm nội dung vào thẻ alert danger khi fail
+                message.append(
+                    f'<div class="alert alert-danger" role="alert">'
+                    f'{message_temp} <div style="text-align: center;"><strong>{error_msg}</strong><br><strong>&lt;&lt;&lt;&lt;&lt;&lt; Fail &gt;&gt;&gt;&gt;&gt;&gt;</strong></div>'
+                    f'</div>'
+                )
+            header_msg = f"""
+            <div style="text-align: center;">
+            <h5> <span style="color: black;"> &lt;&lt;&lt;&lt;&lt;&lt;RUNNING TEST CASES&gt;&gt;&gt;&gt;&gt;&gt;</span></h5>
+            <h6> <span style="color: red;">You have passed {passed_tests} test cases.<br> 
+            {numHiddenTestCases} HIDDEN TEST CASES LEFT. </span></h6></div><br>
+            
+            """
+        message.insert(0, header_msg)
+    except subprocess.CalledProcessError as e:
+        return {'error': f"Error: {e}"}
+    combined_message = ''.join(message)
+    return combined_message

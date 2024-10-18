@@ -1,41 +1,54 @@
-import xml.etree.ElementTree as ET
+import re
 import subprocess
 import os
-from .helpers import save_xml_result, run_test_case, calculate_score, cleanup_files, get_dir
+from .helpers import cleanup_files, get_dir, write_to_file , run_and_combine_messsages, run_code
 
-def handle_java(submission, student_code_file, class_name, test_cases, total_tests, passed_tests):
-    root = ET.Element("grading_result")
+def compile_java_code(student_code, language):
+    match = re.search(r'public\s+class\s+(\w+)', student_code)
+    if not match:
+        return {'error': "No public class found in the Java code.", 'passed_tests': 0}
+
+    class_name = match.group(1)
+    java_filename = os.path.join(get_dir(language), f"{class_name}.java")
+
+    write_to_file(java_filename, student_code)
+
+    compile_result = subprocess.run(
+        ['javac', java_filename],
+        capture_output=True, text=True
+    )
+    if compile_result.returncode != 0:
+        return {'error': compile_result.stderr, 'passed_tests': 0}
+    return class_name, java_filename
+
+def precheck_java(language, code, precheck_test_cases, passed_tests, numHiddenTestCases):
+    try:
+        class_name, java_filename = compile_java_code(code, language)
+
+        combined_message = run_and_combine_messsages(language, java_filename, None, class_name, precheck_test_cases, numHiddenTestCases, passed_tests)
+        cleanup_files([java_filename, os.path.join(get_dir(language), f"{class_name}.class")])
+
+    except Exception as e:
+        return {'error': str(e), 'passed_tests': passed_tests, 'numHiddenTestCases': numHiddenTestCases}
     
-    # Compile Java code and check for errors
-    if compile_java_code(student_code_file, root) != 0:
-        return save_xml_result(root, get_dir('java'), "result.xml", score=0)
+    return combined_message
 
-    # Run Java program and handle test cases
-    for i, test in enumerate(test_cases):
-        passed_tests += run_test_case(f"java -cp {get_dir('java')} {class_name}", test, i, root)
-
-    cleanup_files([student_code_file, os.path.join(get_dir('java'), f"{class_name}.class")])
-
-    score = calculate_score(passed_tests, total_tests)
-    return save_xml_result(root, get_dir('java'), "result.xml", score)
-
-def compile_java_code(student_code_file, root):
-    compile_process = subprocess.run(['javac', student_code_file], capture_output=True, text=True)
-
-    if compile_process.returncode != 0:
-        ET.SubElement(root, "error").text = compile_process.stderr
-
-    return compile_process.returncode
-
-def run_java_tests(class_name, precheck_test_cases, passed_tests):
-    for test in precheck_test_cases:
-        try:
-            result = subprocess.run(
-                ['java', '-cp', get_dir('java'), class_name],
-                input=test['input'], capture_output=True, text=True, timeout=2
-            )
+def grade_Java_submission(language, student_code, class_name, test_cases, passed_tests):
+    try:
+        class_name, java_filename = compile_java_code(student_code, language)
+        
+        for test in test_cases['test_cases']:
+            result = run_code(language, None, test, None, class_name)
             if result.stdout.strip() == test['expected_output'].strip():
                 passed_tests += 1
-        except subprocess.TimeoutExpired:
-            print("Timeout")
+        for hidden in test_cases['hidden_test_cases']:
+            hidden_result = run_code(language, None, hidden, None, class_name)
+            if hidden_result.stdout.strip() == hidden['expected_output'].strip():
+                passed_tests += 1
+
+        cleanup_files([java_filename, os.path.join(get_dir(language), f"{class_name}.class")])
+
+    except Exception as e:
+        return {'error': str(e), 'passed_tests': passed_tests}
+    
     return passed_tests

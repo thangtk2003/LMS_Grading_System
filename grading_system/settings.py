@@ -35,6 +35,17 @@ TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 # Application definition
 
+#Ckeditor
+CKEDITOR_BASEPATH ='/static/ckeditor/ckeditor/'
+CKEDITOR_UPLOAD_PATH='uploads/'
+CKEDITOR_IMAGE_BACKEND = 'pillow'
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'width': '100%',
+    },
+}
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -45,6 +56,8 @@ INSTALLED_APPS = [
     'exercises',
     'crispy_forms',
     'import_export',
+    'ckeditor',
+    'ckeditor_uploader',
 ]
 
 MIDDLEWARE = [

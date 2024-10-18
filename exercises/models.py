@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from ckeditor_uploader.fields import RichTextUploadingField
 # Create your models here.
 class Exercise(models.Model):
     LANGUAGE_CHOICES = [
@@ -11,7 +11,7 @@ class Exercise(models.Model):
     ]
 
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = RichTextUploadingField(config_name="default", null=True)
     language = models.CharField(max_length=10,
                                 choices=LANGUAGE_CHOICES,
                                 default='python')

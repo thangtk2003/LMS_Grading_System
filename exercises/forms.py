@@ -1,6 +1,6 @@
 from django import forms
 from .models import Submission, Exercise
-
+from ckeditor.widgets import CKEditorWidget
 class SubmissionForm(forms.ModelForm):
     class Meta:
         model = Submission
@@ -17,7 +17,7 @@ class ExerciseForm(forms.ModelForm):
         fields = ['title', 'description', 'language','test_cases']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'description': CKEditorWidget(attrs={'class': 'form-control'}),
             'language': forms.Select(attrs={'class': 'form-control'}),
             'test_cases': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
         }

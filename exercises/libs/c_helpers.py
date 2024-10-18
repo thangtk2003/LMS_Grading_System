@@ -1,43 +1,49 @@
-
-import xml.etree.ElementTree as ET
 import subprocess
-from .helpers import save_xml_result, run_test_case, calculate_score, cleanup_files, get_dir
+import os
+from .helpers import cleanup_files, get_dir, write_to_file, run_and_combine_messsages, run_code
 
+def compile_C_code(temp_file, compiled_executable):
+    compile_result = subprocess.run(
+        ['gcc', temp_file, '-o', compiled_executable],
+        capture_output=True, text=True
+    )
+    if compile_result.returncode != 0:
+        return {'error': compile_result.stderr, 'passed_tests': 0, 'numHiddenTestCases': 0}
 
-def handle_c(submission, student_code_file, compiled_executable, test_cases, total_tests, passed_tests):
-    root = ET.Element("grading_result")
+def precheck_c(language, code, precheck_test_cases, passed_tests, numHiddenTestCases):
+    try:
+        temp_file = os.path.join(get_dir(language), 'temp_script.c')
+        compiled_executable = os.path.join(get_dir(language), 'temp_script.exe')
 
-    # Compile C code and check for errors
-    if compile_c_code(student_code_file, compiled_executable, root) != 0:
-        return save_xml_result(root, get_dir('c'), "result.xml", score=0)
+        write_to_file(temp_file, code)
 
-    # Run C program and handle test cases
-    for i, test in enumerate(test_cases):
-        passed_tests += run_test_case(compiled_executable, test, i, root)
+        compile_C_code(temp_file, compiled_executable)
+        
+        combined_message = run_and_combine_messsages(language, temp_file, compiled_executable, None, precheck_test_cases, numHiddenTestCases, passed_tests)
+        
+        cleanup_files([compiled_executable, temp_file])
 
-    cleanup_files([compiled_executable, student_code_file])
+    except Exception as e:
+        return {'error': str(e), 'passed_tests': passed_tests, 'numHiddenTestCases': numHiddenTestCases}
+    
+    return combined_message
 
-    score = calculate_score(passed_tests, total_tests)
-    return save_xml_result(root, get_dir('c'), "result.xml", score)
-
-def compile_c_code(student_code_file, compiled_executable, root):
-    compile_command = ['gcc', student_code_file, '-o', compiled_executable]
-    compile_process = subprocess.run(compile_command, capture_output=True, text=True)
-
-    if compile_process.returncode != 0:
-        ET.SubElement(root, "error").text = compile_process.stderr
-
-    return compile_process.returncode
-
-def run_c_tests(precheck_test_cases, compiled_executable, passed_tests):
-    for test in precheck_test_cases:
-        try:
-            result = subprocess.run(
-                compiled_executable, input=test['input'], 
-                capture_output=True, text=True, timeout=2
-            )
+def grade_C_submission(language, student_code_file, compiled_executable, test_cases, passed_tests):
+    try:
+        compile_C_code(student_code_file, compiled_executable)
+        
+        for test in test_cases['test_cases']:
+            result = run_code(language, None, test, compiled_executable, None)
             if result.stdout.strip() == test['expected_output'].strip():
                 passed_tests += 1
-        except subprocess.TimeoutExpired:
-            print("Timeout")
+        for hidden in test_cases['hidden_test_cases']:
+            hidden_result = run_code(language, None, hidden, compiled_executable, None)
+            if hidden_result.stdout.strip() == hidden['expected_output'].strip():
+                passed_tests += 1
+
+        cleanup_files([compiled_executable, student_code_file])
+
+    except Exception as e:
+        return {'error': str(e), 'passed_tests': passed_tests}
+    
     return passed_tests
