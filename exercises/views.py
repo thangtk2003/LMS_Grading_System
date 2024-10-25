@@ -2,6 +2,7 @@ import json  # To parse JSON data
 
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.core.paginator import Paginator
 
 from .libs.submission import grade_submission, precheck
 
@@ -10,8 +11,22 @@ from .models import Exercise, Submission
 
 # Create your views here.
 def exercise_list(request):
-    exercises = Exercise.objects.all().order_by('title')
-    return render(request, 'exercise_list.html', {'exercises': exercises})
+    # Get the selected language from the GET request
+    selected_language = request.GET.get('language')
+
+    # Filter exercises by the selected language if one is chosen, otherwise show all
+    if selected_language:
+        exercises_list = Exercise.objects.filter(language=selected_language).order_by('title')
+    else:
+        exercises_list = Exercise.objects.all().order_by('title')
+
+    # Get the distinct languages for the dropdown
+    languages = Exercise.objects.values_list('language', flat=True).distinct()
+    paginator = Paginator(exercises_list, 50)  # Show 50 exercises per page
+
+    page_number = request.GET.get('page')
+    exercises = paginator.get_page(page_number)
+    return render(request, 'exercise_list.html', {'exercises': exercises, 'languages': languages, 'selected_language': selected_language})
 
 def exercise_add(request):
     if request.method == 'POST':
@@ -30,13 +45,15 @@ def exercise_detail(request, exercise_id):
     submission = Submission.objects.filter(student=request.user, exercise=exercise).first()
     if submission:
         submissed = True
+        score = submission.score
     else:
         submissed = False
+        score = None
     if submission:
         form = SubmissionForm(instance=submission)
     else:
         form = SubmissionForm()
-    return render(request, 'exercise_form.html', {'exercise': exercise, 'form': form, 'submissed': submissed})
+    return render(request, 'exercise_form.html', {'exercise': exercise, 'form': form, 'submissed': submissed, 'score': score})
 
 def result_detail(request, submission_id):
     submission = Submission.objects.get(id=submission_id)

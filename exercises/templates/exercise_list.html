@@ -5,9 +5,72 @@
 <a href="{% url 'exercises:exercise_add' %}" class="btn btn-primary" title="Add New Exercise" data-toggle="tooltip">
     <i class="fas fa-plus"></i> Add a new exercise
 </a>
-<ul>
+<!-- Dropdown to filter exercises by language -->
+<form method="get" class="form-inline mb-3">
+    <label for="language" class="mr-2">Filter by Language:</label>
+    <select name="language" id="language" class="form-control mr-2">
+        <option value="">All Languages</option>
+        {% for language in languages %}
+            <option value="{{ language }}" {% if language == selected_language %}selected{% endif %}>
+                {{ language | capfirst }}
+            </option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+</form>
+
+<ul class="list-group">
     {% for exercise in exercises %}
-        <li><a href="{% url 'exercises:exercise_detail' exercise.id %}">{{ exercise.title }}</a></li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'exercises:exercise_detail' exercise.id %}">{{ exercise.title }}</a>
+            <span class="badge badge-primary badge-pill">{{ exercise.language }}</span>
+        </li>
+    {% empty %}
+        <li class="list-group-item">No exercises are available.</li>
     {% endfor %}
 </ul>
+
+<!-- Bootstrap Pagination -->
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center mt-4">
+        {% if exercises.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1&language={{ selected_language }}" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                    <span class="sr-only">First</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ exercises.previous_page_number }}&language={{ selected_language }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                    <span class="sr-only">Previous</span>
+                </a>
+            </li>
+        {% endif %}
+
+        <!-- Show page numbers -->
+        {% for num in exercises.paginator.page_range %}
+            {% if exercises.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > exercises.number|add:-3 and num < exercises.number|add:3 %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}&language={{ selected_language }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if exercises.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ exercises.next_page_number }}&language={{ selected_language }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ exercises.paginator.num_pages }}&language={{ selected_language }}" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                    <span class="sr-only">Last</span>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
 {% endblock %}

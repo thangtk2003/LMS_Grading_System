@@ -17,7 +17,7 @@ class SubmissionResource(resources.ModelResource):
 # Register the models with ImportExportModelAdmin
 @admin.register(Exercise)
 class ExerciseAdmin(ImportExportModelAdmin):
-    list_display = ('title', 'description', 'language')
+    list_display = ('id', 'title', 'description', 'language')
     search_fields = ('title',)
     resource_class = ExerciseResource
 

@@ -31,7 +31,13 @@
             {% if submissed is False %}
                 <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#confirmModal">Submit Code</button>
             {% else %}
-                <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#confirmModal" disabled>Disabled Submit Code</button>
+                <!-- Disabled Submit Button with Tooltip wrapped in a span -->
+                <span tabindex="0" data-toggle="tooltip" data-placement="top" data-title="Submission is disabled because you have already submitted once!!!">
+                    <button type="button" id="submit-code-button" class="btn btn-primary mt-3" disabled>
+                        Disabled Submit
+                    </button>
+                </span>
+                <button type="button" class="btn mt-3">{{score}} POINTS</button>
             {% endif %}
         </form>
         <div id="output" class="mt-3"></div> <!-- Phần hiển thị kết quả -->
@@ -127,6 +133,11 @@
     document.getElementById('confirm-submit').addEventListener('click', function() {
         editor.save(); // Lưu giá trị từ CodeMirror vào textarea
         document.getElementById('code-form').submit(); // Gửi form
+    });
+
+    $(document).ready(function(){
+        // Initialize all tooltips
+        $('[data-toggle="tooltip"]').tooltip();
     });
 </script>
 {% endblock %}

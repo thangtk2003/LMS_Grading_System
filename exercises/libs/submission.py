@@ -34,8 +34,7 @@ def grade_submission(submission):
         case 'java':
             passed_tests = grade_Java_submission(language, student_code, class_name, test_cases, passed_tests)
         case 'mysql':
-            total_tests = len(test_cases)
-            _ , passed_tests = execute_sql(student_code, test_cases)
+            _ , passed_tests, total_tests = execute_sql(student_code, test_cases)
     score = calculate_score(passed_tests, total_tests)
     return score
 
@@ -53,7 +52,7 @@ def precheck(code, language, test_cases):
         case 'java':
             combined_message = precheck_java(language, code, precheck_test_cases, passed_tests, numHiddenTestCases)
         case 'mysql':
-            combined_message, _ = execute_sql(code, test_cases)
+            combined_message, _, _ = execute_sql(code, test_cases)
 
     return {'combined_message': combined_message}
 
